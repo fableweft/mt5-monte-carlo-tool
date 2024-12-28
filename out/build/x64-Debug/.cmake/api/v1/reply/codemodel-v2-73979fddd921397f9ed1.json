@@ -1,0 +1,61 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-ceba5f5985075ab47171.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.15"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "MT5-Monte-Carlo-Tool",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "MT5-Monte-Carlo-Tool::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-MT5-Monte-Carlo-Tool-Debug-c81444c0bc19fd1d2c04.json",
+					"name" : "MT5-Monte-Carlo-Tool",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/jedi/Desktop/cplus/MT5-Monte-Carlo-Tool/out/build/x64-Debug",
+		"source" : "C:/Users/jedi/Desktop/cplus/MT5-Monte-Carlo-Tool"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}

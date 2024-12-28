@@ -1,0 +1,8 @@
+{
+    "name": "mt5-monte-carlo-tool",
+    "version": "1.0.0",
+    "description": "A tool for Monte Carlo simulations of MT5 backtest results.",
+    "dependencies": [
+        "xlnt"
+    ]
+}
