@@ -38,7 +38,7 @@ static bool loadWorkbook(xlnt::workbook &workbook, const string &filename) {
         return true;
     }
     catch (const std::exception& e) {
-        std::cerr << "Failed to load MT5 backtest file!\n" << e.what() << "\n";
+        std::cerr << "Failed to load file: " << filename << "\n" << e.what() << "\n";
         return false;
     }
 }
@@ -278,6 +278,7 @@ int main() {
     }
 
     SimulationMetrics avgMetrics = { 0.0, 0.0, 0.0, 0, 0.0 };
+
     for (const auto &result : results) {
         avgMetrics.winRate += result.winRate;
         avgMetrics.profitFactor += result.profitFactor;
