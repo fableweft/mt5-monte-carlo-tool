@@ -4,53 +4,56 @@
 #include <random>
 #include <algorithm>
 #include <cmath>
-#include <numeric> 
+#include <numeric>
 #include <iomanip>
-
 
 using namespace std;
 
-struct Trade {
+struct Trade
+{
     string type;
     double outcome;
 };
 
-
-struct SimulationMetrics {
+struct SimulationMetrics
+{
     double finalBalance;
-    double maxDrawdown;          
-    double maxDrawdownPercent;   
-    double profitFactor;         
+    double maxDrawdown;
+    double maxDrawdownPercent;
+    double profitFactor;
     int totalTrades;
-    double winRate;              
-    double sharpeRatio;          
-    double maxConsecutiveLosses; 
+    double winRate;
+    double sharpeRatio;
+    double maxConsecutiveLosses;
     double averageWin;
     double averageLoss;
-    double riskRewardRatio;  
+    double riskRewardRatio;
 };
 
-
-
-static bool loadWorkbook(xlnt::workbook &workbook, const string &filename) {
-    try {
+static bool loadWorkbook(xlnt::workbook &workbook, const string &filename)
+{
+    try
+    {
         workbook.load(filename);
         return true;
     }
-    catch (const std::exception& e) {
-        std::cerr << "Failed to load file: " << filename << "\n" << e.what() << "\n";
+    catch (const std::exception &e)
+    {
+        std::cerr << "Failed to load file: " << filename << "\n"
+                  << e.what() << "\n";
         return false;
     }
 }
 
-
-
-vector<SimulationMetrics> runMonteCarloSimulations(const vector<Trade> &trades, double initialBalance, int numSimulations, string &filename) {
-    if (trades.empty()) {
+vector<SimulationMetrics> runMonteCarloSimulations(const vector<Trade> &trades, double initialBalance, int numSimulations, string &filename)
+{
+    if (trades.empty())
+    {
         cerr << "Error: No trades provided for simulation.\n";
         return {};
     }
-    if (initialBalance <= 0) {
+    if (initialBalance <= 0)
+    {
         cerr << "Error: Initial balance must be positive.\n";
         return {};
     }
@@ -60,17 +63,21 @@ vector<SimulationMetrics> runMonteCarloSimulations(const vector<Trade> &trades, 
     mt19937 generator(random());
 
     // create a normal distribution based on the historical trades
-    double meanOutcome = accumulate(trades.begin(), trades.end(), 0.0, [](double sum, const Trade &trade) { return sum + trade.outcome; }) / trades.size();
+    double meanOutcome = accumulate(trades.begin(), trades.end(), 0.0, [](double sum, const Trade &trade)
+                                    { return sum + trade.outcome; }) /
+                         trades.size();
     double stdDev = 0;
 
-    for (const auto &trade : trades) {
+    for (const auto &trade : trades)
+    {
         stdDev += pow(trade.outcome - meanOutcome, 2);
     }
 
     stdDev = sqrt(stdDev / (trades.size() - 1));
     normal_distribution<double> distribution(meanOutcome, stdDev);
 
-    for (int i = 0; i < numSimulations; ++i) {
+    for (int i = 0; i < numSimulations; ++i)
+    {
         SimulationMetrics metrics{};
         double balance = initialBalance;
         double peakBalance = initialBalance;
@@ -84,28 +91,33 @@ vector<SimulationMetrics> runMonteCarloSimulations(const vector<Trade> &trades, 
         double grossLoss = 0;
 
         // simulate trades
-        for (size_t j = 0; j < trades.size(); ++j) {
+        for (size_t j = 0; j < trades.size(); ++j)
+        {
             double outcome = distribution(generator);
             tradeOutcomes.push_back(outcome);
 
             balance += outcome;
 
             // update peak balance and drawdown
-            if (balance > peakBalance) {
+            if (balance > peakBalance)
+            {
                 peakBalance = balance;
                 currentDrawdown = 0;
             }
-            else {
+            else
+            {
                 currentDrawdown = peakBalance - balance;
                 maxDrawdown = max(maxDrawdown, currentDrawdown);
             }
 
             // track the consecutive losses
-            if (outcome < 0) {
+            if (outcome < 0)
+            {
                 consecutiveLosses++;
                 grossLoss += abs(outcome);
             }
-            else {
+            else
+            {
                 maxConsecutiveLosses = max(maxConsecutiveLosses, consecutiveLosses);
                 consecutiveLosses = 0; // reset consecutive losses
                 grossProfit += outcome;
@@ -120,18 +132,21 @@ vector<SimulationMetrics> runMonteCarloSimulations(const vector<Trade> &trades, 
         metrics.totalTrades = trades.size();
 
         // verify total trades
-        if (metrics.totalTrades != trades.size()) {
+        if (metrics.totalTrades != trades.size())
+        {
             cerr << "Error: Mismatch in total trades for simulation " << i + 1 << ".\n";
         }
 
         // calc win rate
-        int winningTrades = count_if(tradeOutcomes.begin(), tradeOutcomes.end(), [](double outcome) { return outcome > 0; });
+        int winningTrades = count_if(tradeOutcomes.begin(), tradeOutcomes.end(), [](double outcome)
+                                     { return outcome > 0; });
         metrics.winRate = (!tradeOutcomes.empty()) ? (static_cast<double>(winningTrades) / tradeOutcomes.size()) * 100 : 0;
 
         // calc sharpe ratio (we assume risk free rate = 0 for simplicity)
         double returns_mean = accumulate(tradeOutcomes.begin(), tradeOutcomes.end(), 0.0) / tradeOutcomes.size();
         double returns_stddev = 0;
-        for (double outcome : tradeOutcomes) {
+        for (double outcome : tradeOutcomes)
+        {
             returns_stddev += pow(outcome - returns_mean, 2);
         }
         returns_stddev = sqrt(returns_stddev / (tradeOutcomes.size() - 1));
@@ -140,9 +155,12 @@ vector<SimulationMetrics> runMonteCarloSimulations(const vector<Trade> &trades, 
 
         // calc average win/loss
         vector<double> wins, losses;
-        for (double outcome : tradeOutcomes) {
-            if (outcome > 0) wins.push_back(outcome);
-            if (outcome < 0) losses.push_back(abs(outcome));
+        for (double outcome : tradeOutcomes)
+        {
+            if (outcome > 0)
+                wins.push_back(outcome);
+            if (outcome < 0)
+                losses.push_back(abs(outcome));
         }
 
         metrics.averageWin = !wins.empty() ? accumulate(wins.begin(), wins.end(), 0.0) / wins.size() : 0;
@@ -152,20 +170,20 @@ vector<SimulationMetrics> runMonteCarloSimulations(const vector<Trade> &trades, 
         simulationResults.push_back(metrics);
     }
 
-    // show if total trades used in sim == the parsed total 
-    cout << "Total trades parsed from " << filename << ": "  << trades.size() << "\n";
+    // show if total trades used in sim == the parsed total
+    cout << "Total trades parsed from " << filename << ": " << trades.size() << "\n";
     cout << "Total trades per simulation: " << simulationResults[0].totalTrades << "\n";
 
     return simulationResults;
 }
 
-
-
-int main() {
+int main()
+{
     xlnt::workbook wb;
     string fileName = "C:\\Users\\jedi\\Desktop\\BacktestReport\\ReportTester-153306864.xlsx";
 
-    if (!loadWorkbook(wb, fileName)) {
+    if (!loadWorkbook(wb, fileName))
+    {
         return 1;
     }
 
@@ -179,65 +197,72 @@ int main() {
     bool dealsSectionFound = false;
     bool columnNamesRowFound = false;
 
-    // iterator for rows
-    auto rowIter = sheet.rows().begin();
 
-    for (; rowIter != sheet.rows().end(); ++rowIter) {
-        auto &row = *rowIter;
+    auto rows = sheet.rows(); // Store rows first
+    for (auto rowIter = rows.begin(); rowIter != rows.end(); ++rowIter)
+    {
+        auto row = *rowIter;
         string cellValue = row[0].to_string(); // Column 0 (Header)
-        if (cellValue == "Deals") {
+        if (cellValue == "Deals")
+        {
             dealsSectionFound = true;
             continue;
         }
 
         // if the deals section is found then process the rows
-        if (dealsSectionFound) {
+        if (dealsSectionFound)
+        {
             // check if the next row is the column names row
-            if (!columnNamesRowFound) {
+            if (!columnNamesRowFound)
+            {
                 columnNamesRowFound = true;
                 continue;
             }
 
             // extract the initial balance from the next row
-            if (initialBalance == 0.0) {
+            if (initialBalance == 0.0)
+            {
                 initialBalance = row[11].value<double>(); // Column 11 (Balance)
-                continue; 
+                continue;
             }
 
             // process the trade data rows in pairs (in and out)
-            if (row[4].to_string() == "in") { // Column 4 (Direction in or out)
+            if (row[4].to_string() == "in")
+            { // Column 4 (Direction in or out)
                 // get "in" row details
                 string type = row[3].to_string(); // Column 3 Type (buy or sell)
 
                 // move to next row (out)
-                if (++rowIter != sheet.rows().end()) {
-                    auto &nextRow = *rowIter;
+                if (++rowIter != rows.end())
+                {
+                    // Store the next row value
+                    auto nextRow = *rowIter;
                     double outcome = nextRow[10].value<double>(); // Column 10 (Profit)
 
-                    trades.push_back({ type, outcome });
+                    trades.push_back({type, outcome});
                 }
             }
         }
     }
-
     cout << "Initial Balance: " << initialBalance << "\n";
     cout << "Extracted Trades:\n";
     int tradeSequnce = 1;
 
-    for (const auto &trade : trades) {
+    for (const auto &trade : trades)
+    {
         cout << tradeSequnce << ": Type: " << trade.type << ", Outcome: " << trade.outcome << "\n";
         tradeSequnce++;
     }
 
     cout << "\n";
 
-
     // run monte carlo sims
 
     int numSimulations = 1000;
     vector<SimulationMetrics> results = runMonteCarloSimulations(trades, initialBalance, numSimulations, fileName);
 
-    if (results.empty()) {
+    if (results.empty())
+    {
         cerr << "Error: No results from simulations.\n";
         return 1;
     }
@@ -248,7 +273,8 @@ int main() {
     // calculate percentiles
     vector<double> finalBalances;
     vector<double> maxDrawdowns;
-    for (const auto &result : results) {
+    for (const auto &result : results)
+    {
         finalBalances.push_back(result.finalBalance);
         maxDrawdowns.push_back(result.maxDrawdownPercent);
     }
@@ -260,7 +286,8 @@ int main() {
     size_t index50th = size_t(numSimulations * 0.5);
     size_t index95th = size_t(numSimulations * 0.95);
 
-    if (index5th >= finalBalances.size() || index50th >= finalBalances.size() || index95th >= finalBalances.size()) {
+    if (index5th >= finalBalances.size() || index50th >= finalBalances.size() || index95th >= finalBalances.size())
+    {
         cerr << "Error: Not enough simulations to calculate percentiles.\n";
         return 1;
     }
@@ -272,14 +299,28 @@ int main() {
 
     cout << "Maximum Drawdown (95th percentile): " << maxDrawdowns[index95th] << "%\n";
 
-    if (numSimulations == 0) {
+    if (numSimulations == 0)
+    {
         cerr << "Error: Number of simulations must be greater than zero.\n";
         return 1;
     }
 
-    SimulationMetrics avgMetrics = { 0.0, 0.0, 0.0, 0, 0.0 };
+    SimulationMetrics avgMetrics = {
+        0.0, // finalBalance
+        0.0, // maxDrawdown
+        0.0, // maxDrawdownPercent
+        0.0, // profitFactor
+        0,   // totalTrades
+        0.0, // winRate
+        0.0, // sharpeRatio
+        0.0, // maxConsecutiveLosses
+        0.0, // averageWin
+        0.0, // averageLoss
+        0.0  // riskRewardRatio
+    };
 
-    for (const auto &result : results) {
+    for (const auto &result : results)
+    {
         avgMetrics.winRate += result.winRate;
         avgMetrics.profitFactor += result.profitFactor;
         avgMetrics.sharpeRatio += result.sharpeRatio;
@@ -293,7 +334,6 @@ int main() {
     cout << "Sharpe Ratio: " << avgMetrics.sharpeRatio / numSimulations << "\n";
     cout << "Average Max Consecutive Losses: " << avgMetrics.maxConsecutiveLosses / numSimulations << "\n";
     cout << "Risk/Reward Ratio: " << avgMetrics.riskRewardRatio / numSimulations << "\n";
-
 
     return 0;
 }
