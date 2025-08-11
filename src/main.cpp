@@ -8,7 +8,6 @@
 #include <iomanip>
 
 using namespace std;
-
 struct Trade
 {
     string type;
