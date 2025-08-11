@@ -97,7 +97,6 @@ vector<SimulationMetrics> runMonteCarloSimulations(const vector<Trade> &trades, 
 
             balance += outcome;
 
-            // update peak balance and drawdown
             if (balance > peakBalance)
             {
                 peakBalance = balance;
@@ -136,12 +135,12 @@ vector<SimulationMetrics> runMonteCarloSimulations(const vector<Trade> &trades, 
             cerr << "Error: Mismatch in total trades for simulation " << i + 1 << ".\n";
         }
 
-        // calc win rate
+        
         int winningTrades = count_if(tradeOutcomes.begin(), tradeOutcomes.end(), [](double outcome)
                                      { return outcome > 0; });
         metrics.winRate = (!tradeOutcomes.empty()) ? (static_cast<double>(winningTrades) / tradeOutcomes.size()) * 100 : 0;
 
-        // calc sharpe ratio (we assume risk free rate = 0 for simplicity)
+        
         double returns_mean = accumulate(tradeOutcomes.begin(), tradeOutcomes.end(), 0.0) / tradeOutcomes.size();
         double returns_stddev = 0;
         for (double outcome : tradeOutcomes)
@@ -152,7 +151,7 @@ vector<SimulationMetrics> runMonteCarloSimulations(const vector<Trade> &trades, 
         metrics.sharpeRatio = (returns_stddev != 0) ? (returns_mean / returns_stddev) * sqrt(252) : 0; // annualized
         metrics.maxConsecutiveLosses = maxConsecutiveLosses;
 
-        // calc average win/loss
+        
         vector<double> wins, losses;
         for (double outcome : tradeOutcomes)
         {
@@ -169,7 +168,7 @@ vector<SimulationMetrics> runMonteCarloSimulations(const vector<Trade> &trades, 
         simulationResults.push_back(metrics);
     }
 
-    // show if total trades used in sim == the parsed total
+    
     cout << "Total trades parsed from " << filename << ": " << trades.size() << "\n";
     cout << "Total trades per simulation: " << simulationResults[0].totalTrades << "\n";
 
@@ -197,46 +196,41 @@ int main()
     bool columnNamesRowFound = false;
 
 
-    auto rows = sheet.rows(); // Store rows first
+    auto rows = sheet.rows(); 
     for (auto rowIter = rows.begin(); rowIter != rows.end(); ++rowIter)
     {
         auto row = *rowIter;
-        string cellValue = row[0].to_string(); // Column 0 (Header)
+        string cellValue = row[0].to_string(); 
         if (cellValue == "Deals")
         {
             dealsSectionFound = true;
             continue;
         }
 
-        // if the deals section is found then process the rows
-        if (dealsSectionFound)
+       if (dealsSectionFound)
         {
-            // check if the next row is the column names row
             if (!columnNamesRowFound)
             {
                 columnNamesRowFound = true;
                 continue;
             }
 
-            // extract the initial balance from the next row
             if (initialBalance == 0.0)
             {
-                initialBalance = row[11].value<double>(); // Column 11 (Balance)
+                initialBalance = row[11].value<double>(); 
                 continue;
             }
 
             // process the trade data rows in pairs (in and out)
             if (row[4].to_string() == "in")
-            { // Column 4 (Direction in or out)
-                // get "in" row details
-                string type = row[3].to_string(); // Column 3 Type (buy or sell)
+            { 
+                string type = row[3].to_string(); 
 
-                // move to next row (out)
                 if (++rowIter != rows.end())
                 {
-                    // Store the next row value
+                    
                     auto nextRow = *rowIter;
-                    double outcome = nextRow[10].value<double>(); // Column 10 (Profit)
+                    double outcome = nextRow[10].value<double>(); 
 
                     trades.push_back({type, outcome});
                 }
